@@ -9,7 +9,6 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -21,7 +20,6 @@ jobs:
       - name: Install system dependencies
         run: |
           sudo apt-get update
-
           sudo apt-get install -y \
             git \
             zip \
@@ -37,45 +35,41 @@ jobs:
             libffi-dev \
             libssl-dev
 
-      - name: Setup Android SDK
-        run: |
-          echo "ANDROID_HOME=$ANDROID_SDK_ROOT" >> $GITHUB_ENV
-
-          yes | $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager --licenses || true
-
-          $ANDROID_SDK_ROOT/cmdline-tools/latest/bin/sdkmanager \
-            "platform-tools" \
-            "platforms;android-33" \
-            "build-tools;37.0.0"
-
-      - name: Check Android SDK
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          ls -la "$ANDROID_HOME"
-          ls -la "$ANDROID_HOME/build-tools"
-          ls -la "$ANDROID_HOME/build-tools/37.0.0"
-          ls -la "$ANDROID_HOME/platforms/android-33"
-
       - name: Install Python packages
         run: |
           python -m pip install --upgrade pip
           pip install buildozer
           pip install cython==0.29.37
 
-      - name: Build APK
+      - name: Prepare Buildozer
         run: |
-          buildozer -v android debug
+          mkdir -p ~/.buildozer/android/platform
 
-      - name: Show APK
+      - name: Accept Android licenses
+        run: |
+          mkdir -p ~/.android
+          touch ~/.android/repositories.cfg
+
+          yes | sdkmanager --licenses || true
+
+      - name: Build APK
+        env:
+          ACCEPT_ANDROID_SDK_LICENSE: "1"
+        run: |
+          yes | buildozer -v android debug
+
+      - name: Find APK
         if: success()
         run: |
-          echo "APK DOSYALARI:"
-          ls -lh bin/
+          echo "================================"
+          echo "APK DOSYALARI"
+          echo "================================"
+          find . -name "*.apk" -type f -print
 
       - name: Upload APK
         if: success()
         uses: actions/upload-artifact@v4
         with:
           name: benimoyunumm-apk
-          path: bin/*.apk
+          path: "**/*.apk"
           if-no-files-found: error
