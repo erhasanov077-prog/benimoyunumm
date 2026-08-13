@@ -56,7 +56,6 @@ jobs:
 
       - name: APK oluştur
         run: |
-          buildozer android clean
           buildozer android debug
 
       - name: APK yükle
