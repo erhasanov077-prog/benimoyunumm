@@ -3,6 +3,8 @@ title = PiuCaniPiuBelli
 package.name = piucanipiubelli
 package.domain = org.alberto
 
+version = 1.0
+
 source.dir = .
 source.main = main.py
 
