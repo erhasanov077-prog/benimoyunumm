@@ -8,30 +8,59 @@ on:
 
 jobs:
   build:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-22.04
 
     steps:
+
+      # -------------------------
+      # 1 - KODU AL
+      # -------------------------
       - name: Checkout
         uses: actions/checkout@v4
 
+      # -------------------------
+      # 2 - PYTHON
+      # -------------------------
       - name: Setup Python
         uses: actions/setup-python@v5
         with:
           python-version: "3.11"
 
+      # -------------------------
+      # 3 - JAVA
+      # -------------------------
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      # -------------------------
+      # 4 - ANDROID SDK
+      # -------------------------
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
 
+      # -------------------------
+      # 5 - ANDROID PAKETLERİ
+      # -------------------------
       - name: Install Android SDK packages
         run: |
-          sdkmanager "platform-tools"
-          sdkmanager "platforms;android-33"
-          sdkmanager "build-tools;35.0.0"
           yes | sdkmanager --licenses || true
 
-      - name: Install dependencies
+          sdkmanager \
+            "platform-tools" \
+            "platforms;android-33" \
+            "build-tools;35.0.0" \
+            "ndk;25.2.9519653"
+
+      # -------------------------
+      # 6 - SİSTEM PAKETLERİ
+      # -------------------------
+      - name: Install system dependencies
         run: |
           sudo apt-get update
+
           sudo apt-get install -y \
             git \
             zip \
@@ -41,26 +70,75 @@ jobs:
             libtool \
             pkg-config \
             zlib1g-dev \
+            libncurses5-dev \
+            libncursesw5-dev \
+            cmake \
             libffi-dev \
-            libssl-dev
+            libssl-dev \
+            gettext \
+            autopoint
 
+      # -------------------------
+      # 7 - PYTHON PAKETLERİ
+      # -------------------------
       - name: Install Buildozer
         run: |
-          pip install --upgrade pip
-          pip install buildozer
-          pip install "cython==0.29.37"
+          python -m pip install --upgrade pip
+          pip install setuptools wheel
+          pip install buildozer==1.6.0
+          pip install cython==0.29.36
 
-      - name: Check Buildozer
+      # -------------------------
+      # 8 - ANDROID DEĞİŞKENLERİ
+      # -------------------------
+      - name: Configure Android environment
         run: |
-          buildozer --version
-          sdkmanager --version
+          echo "ANDROIDSDK=$ANDROID_HOME" >> $GITHUB_ENV
+          echo "ANDROIDSDK_ROOT=$ANDROID_HOME" >> $GITHUB_ENV
 
+          echo "ANDROIDNDK=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+          echo "ANDROIDNDK_ROOT=$ANDROID_HOME/ndk/25.2.9519653" >> $GITHUB_ENV
+
+          echo "ANDROIDAPI=33" >> $GITHUB_ENV
+          echo "ANDROIDMINAPI=24" >> $GITHUB_ENV
+
+      # -------------------------
+      # 9 - BUILDOZER SPEC
+      # -------------------------
+      - name: Check Buildozer configuration
+        run: |
+          grep -n "android.arch" buildozer.spec || true
+
+      # -------------------------
+      # 10 - TEMİZLE
+      # -------------------------
+      - name: Clean previous build
+        run: |
+          rm -rf .buildozer
+          rm -rf bin
+
+      # -------------------------
+      # 11 - APK DERLE
+      # -------------------------
       - name: Build APK
         run: |
-          yes | buildozer -v android debug
+          buildozer -v android debug
 
+      # -------------------------
+      # 12 - APK BUL
+      # -------------------------
+      - name: Find APK
+        run: |
+          echo "APK DOSYALARI:"
+          find . -type f -name "*.apk" -print
+
+      # -------------------------
+      # 13 - APK YÜKLE
+      # -------------------------
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
           name: benimoyunumm-apk
-          path: bin/*.apk
+          path: |
+            bin/*.apk
+          if-no-files-found: error
