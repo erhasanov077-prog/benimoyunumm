@@ -14,7 +14,7 @@ jobs:
       - name: Repository indir
         uses: actions/checkout@v4
 
-      - name: Python kur
+      - name: Python 3.9 kur
         uses: actions/setup-python@v5
         with:
           python-version: "3.9"
@@ -31,32 +31,22 @@ jobs:
             libffi-dev \
             libssl-dev
 
-      - name: Buildozer kur
+      - name: Python paketlerini kur
         run: |
           python -m pip install --upgrade pip
           pip install cython==0.29.36
           pip install buildozer
 
-      - name: buildozer.spec kontrolü
+      - name: Dosyaları kontrol et
         run: |
-          test -f buildozer.spec
           test -f main.py
+          test -f buildozer.spec
 
-      - name: Android SDK lisanslarını kabul et
-        run: |
-          mkdir -p "$ANDROID_HOME/licenses"
-          yes | sdkmanager --licenses || true
-
-      - name: Android SDK araçlarını kur
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools" "platforms;android-35" "build-tools;35.0.0"
-
-      - name: APK oluştur
+      - name: Buildozer ile APK oluştur
         run: |
           buildozer android debug
 
-      - name: APK yükle
+      - name: APK'yı yükle
         uses: actions/upload-artifact@v4
         with:
           name: PiuCaniPiuBelli-APK
