@@ -17,7 +17,7 @@ android.permissions = INTERNET
 
 android.minapi = 24
 android.api = 33
-android.arch = arm64-v8a
+android.archs = arm64-v8a
 
 android.entrypoint = org.kivy.android.PythonActivity
 
