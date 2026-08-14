@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -19,6 +20,12 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: "17"
+          distribution: "temurin"
+
       - name: Install system dependencies
         run: |
           sudo apt-get update
@@ -26,7 +33,6 @@ jobs:
             git \
             zip \
             unzip \
-            openjdk-17-jdk \
             autoconf \
             automake \
             libtool \
@@ -38,7 +44,8 @@ jobs:
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
-          pip install "cython<3" buildozer
+          pip install buildozer
+          pip install "cython<3"
 
       - name: Build APK
         run: |
@@ -49,4 +56,4 @@ jobs:
         with:
           name: TheHasanvFtbl-APK
           path: bin/*.apk
-          
+          if-no-files-found: error
