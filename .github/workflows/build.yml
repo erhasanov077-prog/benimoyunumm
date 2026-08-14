@@ -48,19 +48,13 @@ jobs:
         python -m pip install --upgrade pip
         pip install --upgrade buildozer cython==0.29.36
 
-    - name: Cache Buildozer Global Directory
-      uses: actions/cache@v4
-      with:
-        path: |
-          .buildozer
-          ~/.buildozer
-        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
-        restore-keys: |
-          ${{ runner.os }}-buildozer-
+    - name: Clear Old Buildozer Cache (Fixes SDK/Aidl Error)
+      run: |
+        rm -rf .buildozer/android/platform/android-sdk
 
     - name: Build with Buildozer
       run: |
-        buildozer -v android debug
+        yes | buildozer -v android debug
 
     - name: Upload APK Artifact
       uses: actions/upload-artifact@v4
