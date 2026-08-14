@@ -1,96 +1,68 @@
-name: Build Android APK
+name: CI to Build APK with Buildozer
 
 on:
-  workflow_dispatch:
   push:
-    branches:
-      - main
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:
 
 jobs:
   build:
     runs-on: ubuntu-22.04
 
     steps:
+    - name: Checkout Code
+      uses: actions/checkout@v4
 
-      - name: Checkout
-        uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10'
 
-      - name: Setup Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
+    - name: Install System Dependencies
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          git \
+          zip \
+          unzip \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev
 
-      - name: Setup Java 17
-        uses: actions/setup-java@v4
-        with:
-          distribution: temurin
-          java-version: "17"
+    - name: Install Buildozer and Dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install --upgrade buildozer cython==0.29.36
 
-      - name: Install system dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            git \
-            zip \
-            unzip \
-            wget \
-            curl \
-            build-essential \
-            autoconf \
-            automake \
-            libtool \
-            pkg-config \
-            zlib1g-dev \
-            libffi-dev \
-            libssl-dev \
-            cmake \
-            ninja-build
+    - name: Cache Buildozer Global Directory
+      uses: actions/cache@v4
+      with:
+        path: |
+          .buildozer
+          ~/.buildozer
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          ${{ runner.os }}-buildozer-
 
-      - name: Install Android SDK
-        uses: android-actions/setup-android@v3
+    - name: Build with Buildozer
+      id: buildozer
+      uses: ArtemSBulgakov/buildozer-action@v1
+      with:
+        command: buildozer android debug
+        buildozer_version: master
 
-      - name: Install Android SDK packages
-        run: |
-          yes | sdkmanager --licenses || true
-          sdkmanager "platform-tools"
-          sdkmanager "platforms;android-33"
-          sdkmanager "build-tools;33.0.2"
-
-      - name: Check Android SDK
-        run: |
-          echo "ANDROID_HOME=$ANDROID_HOME"
-          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
-          echo "Build-tools:"
-          ls -la "$ANDROID_HOME/build-tools"
-          echo "AIDL:"
-          "$ANDROID_HOME/build-tools/33.0.2/aidl" --help
-
-      - name: Install Buildozer
-        run: |
-          python -m pip install --upgrade pip
-          pip install "cython<3"
-          pip install buildozer
-
-      - name: Check Python and Buildozer
-        run: |
-          python --version
-          pip --version
-          buildozer --version
-          cython --version
-          java -version
-
-      - name: Build APK
-        run: |
-          export ANDROID_HOME="$ANDROID_SDK_ROOT"
-          export ANDROIDSDK="$ANDROID_SDK_ROOT"
-          export ANDROID_SDK_ROOT="$ANDROID_SDK_ROOT"
-          buildozer -v android debug
-
-      - name: Upload APK
-        uses: actions/upload-artifact@v4
-        if: success()
-        with:
-          name: TheHasanvFtbl-APK
-          path: bin/*.apk
-          if-no-files-found: error
-          retention-days: 7
+    - name: Upload APK Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: package
+        path: bin/*.apk
+        
