@@ -11,6 +11,7 @@ jobs:
     runs-on: ubuntu-22.04
 
     steps:
+
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -25,13 +26,16 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Install dependencies
+      - name: Install system dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             git \
             zip \
             unzip \
+            wget \
+            curl \
+            build-essential \
             autoconf \
             automake \
             libtool \
@@ -42,25 +46,38 @@ jobs:
             cmake \
             ninja-build
 
+      - name: Install Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install Android SDK packages
+        run: |
+          yes | sdkmanager --licenses || true
+          sdkmanager "platform-tools"
+          sdkmanager "platforms;android-33"
+          sdkmanager "build-tools;33.0.2"
+
+      - name: Check Android SDK
+        run: |
+          echo "ANDROID_HOME=$ANDROID_HOME"
+          echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          ls -la "$ANDROID_HOME/build-tools"
+          "$ANDROID_HOME/build-tools/33.0.2/aidl" --version
+
       - name: Install Buildozer
         run: |
           python -m pip install --upgrade pip
           pip install "cython<3"
           pip install buildozer
 
-      - name: Check environment
+      - name: Check Python
         run: |
           python --version
-          pip --version
           buildozer --version
           cython --version
-          java -version
 
       - name: Build APK
         run: |
           buildozer -v android debug
-        env:
-          P4A_RELEASE_PLATFORMS: "armeabi-v7a,arm64-v8a"
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -69,3 +86,4 @@ jobs:
           name: TheHasanvFtbl-APK
           path: bin/*.apk
           if-no-files-found: error
+          retention-days: 7
