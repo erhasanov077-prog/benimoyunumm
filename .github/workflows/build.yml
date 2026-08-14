@@ -60,8 +60,10 @@ jobs:
         run: |
           echo "ANDROID_HOME=$ANDROID_HOME"
           echo "ANDROID_SDK_ROOT=$ANDROID_SDK_ROOT"
+          echo "Build-tools:"
           ls -la "$ANDROID_HOME/build-tools"
-          "$ANDROID_HOME/build-tools/33.0.2/aidl" --version
+          echo "AIDL:"
+          "$ANDROID_HOME/build-tools/33.0.2/aidl" --help
 
       - name: Install Buildozer
         run: |
@@ -69,14 +71,19 @@ jobs:
           pip install "cython<3"
           pip install buildozer
 
-      - name: Check Python
+      - name: Check Python and Buildozer
         run: |
           python --version
+          pip --version
           buildozer --version
           cython --version
+          java -version
 
       - name: Build APK
         run: |
+          export ANDROID_HOME="$ANDROID_SDK_ROOT"
+          export ANDROIDSDK="$ANDROID_SDK_ROOT"
+          export ANDROID_SDK_ROOT="$ANDROID_SDK_ROOT"
           buildozer -v android debug
 
       - name: Upload APK
